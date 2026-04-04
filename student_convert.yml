@@ -1,0 +1,22 @@
+---
+- name: Student Convert Pipeline
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+    - name: munendra.json convert karo
+      shell: |
+        curl -s -X POST http://192.168.232.131:30007/convert \
+        -H "Content-Type: application/json" \
+        -d '{"file": "munendra.json"}'
+
+    - name: priyanka.yaml convert karo
+      shell: |
+        curl -s -X POST http://192.168.232.131:30007/convert \
+        -H "Content-Type: application/json" \
+        -d '{"file": "priyanka.yaml"}'
+
+    - name: Complete
+      debug:
+        msg: "Dono files convert aur push ho gayi!"
