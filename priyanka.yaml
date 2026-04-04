@@ -1,0 +1,11 @@
+name: Priyanka
+class: 12th
+roll_no: 102
+subjects:
+  - Math
+  - Biology
+  - Hindi
+marks:
+  math: 95
+  biology: 91
+  hindi: 85

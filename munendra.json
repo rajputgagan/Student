@@ -1,0 +1,11 @@
+{
+  "name": "Munendra",
+  "class": "12th",
+  "roll_no": 101,
+  "subjects": ["Math", "Physics", "Chemistry"],
+  "marks": {
+    "math": 92,
+    "physics": 88,
+    "chemistry": 79
+  }
+}
