@@ -11,8 +11,7 @@ me: JSON to YAML Convert and Push
     git_user_email: gr9582730@gmail.com
 
   tasks:
-
-    - name: Ensure python3 git yaml installed (Alpine)
+    - name: Ensure python3 git yaml installed
       raw: apk add --no-cache python3 git py3-yaml
       changed_when: false
       failed_when: false
@@ -67,4 +66,4 @@ me: JSON to YAML Convert and Push
 
     - name: Done
       debug:
-        msg: "JSON → YAML convert karke GitHub par push ho gaya!"
+        msg: "JSON to YAML convert karke GitHub par push ho gaya!"
