@@ -1,0 +1,11 @@
+class: 12th
+marks:
+  chemistry: 79
+  math: 92
+  physics: 88
+name: Munendra
+roll_no: 101
+subjects:
+- Math
+- Physics
+- Chemistry
