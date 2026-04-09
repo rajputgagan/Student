@@ -1,0 +1,70 @@
+me: JSON to YAML Convert and Push
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  become: no
+
+  vars:
+    repo_path: /root/Student
+    git_branch: main
+    git_user_name: rajputgagan
+    git_user_email: gr9582730@gmail.com
+
+  tasks:
+
+    - name: Ensure python3 git yaml installed (Alpine)
+      raw: apk add --no-cache python3 git py3-yaml
+      changed_when: false
+      failed_when: false
+
+    - name: Set git username
+      command: git config --global user.name "{{ git_user_name }}"
+
+    - name: Set git email
+      command: git config --global user.email "{{ git_user_email }}"
+
+    - name: Pull latest code
+      command: git pull origin {{ git_branch }}
+      args:
+        chdir: "{{ repo_path }}"
+
+    - name: Run JSON to YAML conversion
+      command: >
+        python3 {{ repo_path }}/convert.py
+        json2yaml
+        {{ repo_path }}/munendra.json
+        {{ repo_path }}/output.yaml
+      register: convert_result
+
+    - name: Show conversion result
+      debug:
+        var: convert_result.stdout
+
+    - name: Add output.yaml
+      command: git add output.yaml
+      args:
+        chdir: "{{ repo_path }}"
+
+    - name: Check if changes exist
+      shell: git diff --cached --quiet
+      args:
+        chdir: "{{ repo_path }}"
+      register: git_diff
+      failed_when: false
+      changed_when: false
+
+    - name: Commit if changed
+      command: git commit -m "JSON to YAML via AWX"
+      args:
+        chdir: "{{ repo_path }}"
+      when: git_diff.rc != 0
+
+    - name: Push to GitHub
+      command: git push origin {{ git_branch }}
+      args:
+        chdir: "{{ repo_path }}"
+      when: git_diff.rc != 0
+
+    - name: Done
+      debug:
+        msg: "JSON → YAML convert karke GitHub par push ho gaya!"
