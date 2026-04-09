@@ -6,7 +6,7 @@
   become: no
 
   vars:
-    repo_path: /runner/project
+    repo_path: /runner/project/.git
     git_branch: main
     git_user_name: rajputgagan
     git_user_email: gr9582730@gmail.com
