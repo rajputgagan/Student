@@ -3,98 +3,63 @@
   hosts: localhost
   connection: local
   gather_facts: no
-  become: no
 
   vars:
     git_branch: main
-    git_user_name: rajputgagan
-    git_user_email: gr9582730@gmail.com
 
   tasks:
 
-    - name: Ensure python3 git yaml installed
-      raw: apk add --no-cache python3 git py3-yaml
-      changed_when: false
-      failed_when: false
-
-    - name: Check repo directory
+    - name: Debug repo path
       command: ls -la
       args:
-        chdir: "{{ playbook_dir }}"
+        chdir: /runner/project
 
     - name: Set git username
-      command: git config user.name "{{ git_user_name }}"
+      command: git config user.name "rajputgagan"
       args:
-        chdir: "{{ playbook_dir }}"
+        chdir: /runner/project
 
     - name: Set git email
-      command: git config user.email "{{ git_user_email }}"
+      command: git config user.email "gr9582730@gmail.com"
       args:
-        chdir: "{{ playbook_dir }}"
+        chdir: /runner/project
 
     - name: Pull latest code
-      command: git pull --rebase origin {{ git_branch }}
+      command: git pull --rebase origin main
       args:
-        chdir: "{{ playbook_dir }}"
+        chdir: /runner/project
 
     - name: Convert JSON to YAML
-      command: >
-        python3 convert.py
-        json2yaml
-        munendra.json
-        output.yaml
+      command: python3 convert.py json2yaml munendra.json output.yaml
       args:
-        chdir: "{{ playbook_dir }}"
-      register: json_to_yaml
-
-    - name: Show JSON → YAML result
-      debug:
-        var: json_to_yaml.stdout
+        chdir: /runner/project
 
     - name: Convert YAML to JSON
-      command: >
-        python3 convert.py
-        yaml2json
-        priyanka.yaml
-        output.json
+      command: python3 convert.py yaml2json priyanka.yaml output.json
       args:
-        chdir: "{{ playbook_dir }}"
-      register: yaml_to_json
+        chdir: /runner/project
 
-    - name: Show YAML → JSON result
-      debug:
-        var: yaml_to_json.stdout
-
-    - name: Git add all files
+    - name: Git add
       command: git add .
       args:
-        chdir: "{{ playbook_dir }}"
+        chdir: /runner/project
 
-    - name: Check if changes exist
+    - name: Check changes
       shell: git diff --cached --quiet
       args:
-        chdir: "{{ playbook_dir }}"
+        chdir: /runner/project
       register: git_diff
       failed_when: false
       changed_when: false
 
-    - name: Commit changes
-      command: git commit -m "Auto convert JSON ↔ YAML via AWX"
+    - name: Commit
+      command: git commit -m "Auto convert via AWX"
       args:
-        chdir: "{{ playbook_dir }}"
+        chdir: /runner/project
       when: git_diff.rc != 0
 
-    - name: Push to GitHub
-      command: git push origin {{ git_branch }}
+    - name: Push
+      command: git push origin main
       args:
-        chdir: "{{ playbook_dir }}"
+        chdir: /runner/project
       when: git_diff.rc != 0
-
-    - name: No changes message
-      debug:
-        msg: "No changes to commit"
-      when: git_diff.rc == 0
-
-    - name: Done
-      debug:
-        msg: "✅ Conversion + Git Push completed successfully!"
