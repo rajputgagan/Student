@@ -1,11 +1,11 @@
-- name: JSON to YAML Convert and Push
+---
+- name: JSON ↔ YAML Convert and Push
   hosts: localhost
   connection: local
   gather_facts: no
   become: no
 
   vars:
-    repo_path: "{{ playbook_dir }}"
     git_branch: main
     git_user_name: rajputgagan
     git_user_email: gr9582730@gmail.com
@@ -17,60 +17,84 @@
       changed_when: false
       failed_when: false
 
+    - name: Check repo directory
+      command: ls -la
+      args:
+        chdir: "{{ playbook_dir }}"
+
     - name: Set git username
       command: git config user.name "{{ git_user_name }}"
       args:
-        chdir: "{{ repo_path }}"
+        chdir: "{{ playbook_dir }}"
 
     - name: Set git email
       command: git config user.email "{{ git_user_email }}"
       args:
-        chdir: "{{ repo_path }}"
+        chdir: "{{ playbook_dir }}"
 
     - name: Pull latest code
       command: git pull --rebase origin {{ git_branch }}
       args:
-        chdir: "{{ repo_path }}"
+        chdir: "{{ playbook_dir }}"
 
-    - name: Run JSON to YAML conversion
+    - name: Convert JSON to YAML
       command: >
         python3 convert.py
         json2yaml
         munendra.json
         output.yaml
       args:
-        chdir: "{{ repo_path }}"
-      register: convert_result
+        chdir: "{{ playbook_dir }}"
+      register: json_to_yaml
 
-    - name: Show conversion result
+    - name: Show JSON → YAML result
       debug:
-        var: convert_result.stdout
+        var: json_to_yaml.stdout
 
-    - name: Add files
+    - name: Convert YAML to JSON
+      command: >
+        python3 convert.py
+        yaml2json
+        priyanka.yaml
+        output.json
+      args:
+        chdir: "{{ playbook_dir }}"
+      register: yaml_to_json
+
+    - name: Show YAML → JSON result
+      debug:
+        var: yaml_to_json.stdout
+
+    - name: Git add all files
       command: git add .
       args:
-        chdir: "{{ repo_path }}"
+        chdir: "{{ playbook_dir }}"
 
     - name: Check if changes exist
       shell: git diff --cached --quiet
       args:
-        chdir: "{{ repo_path }}"
+        chdir: "{{ playbook_dir }}"
       register: git_diff
       failed_when: false
       changed_when: false
 
-    - name: Commit if changed
-      command: git commit -m "JSON to YAML via AWX"
+    - name: Commit changes
+      command: git commit -m "Auto convert JSON ↔ YAML via AWX"
       args:
-        chdir: "{{ repo_path }}"
+        chdir: "{{ playbook_dir }}"
       when: git_diff.rc != 0
 
     - name: Push to GitHub
       command: git push origin {{ git_branch }}
       args:
-        chdir: "{{ repo_path }}"
+        chdir: "{{ playbook_dir }}"
       when: git_diff.rc != 0
+
+    - name: No changes message
+      debug:
+        msg: "No changes to commit"
+      when: git_diff.rc == 0
 
     - name: Done
       debug:
-        msg: "JSON to YAML convert karke GitHub par push ho gaya!"
+        msg: "✅ Conversion + Git Push completed successfully!"
