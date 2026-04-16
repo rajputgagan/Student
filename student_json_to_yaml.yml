@@ -11,10 +11,17 @@
 
   tasks:
 
-    - name: Install dependencies
-      raw: apk add --no-cache python3 git py3-yaml
+    - name: Install basic dependencies
+      raw: apk add --no-cache python3 git
       changed_when: false
       failed_when: false
+
+    - name: Install pip (ignore if exists)
+      command: python3 -m ensurepip
+      ignore_errors: yes
+
+    - name: Install PyYAML
+      command: python3 -m pip install pyyaml --break-system-packages
 
     - name: Remove old repo (if exists)
       file:
@@ -77,6 +84,11 @@
       args:
         chdir: "{{ repo_path }}"
       when: git_diff.rc != 0
+
+    - name: No changes message
+      debug:
+        msg: "No changes to commit"
+      when: git_diff.rc == 0
 
     - name: Done
       debug:
