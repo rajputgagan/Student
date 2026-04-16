@@ -1,4 +1,3 @@
----
 - name: JSON to YAML Convert and Push
   hosts: localhost
   connection: local
@@ -6,42 +5,49 @@
   become: no
 
   vars:
-    repo_path: /runner/project/.git
+    repo_path: "{{ playbook_dir }}"
     git_branch: main
     git_user_name: rajputgagan
     git_user_email: gr9582730@gmail.com
 
   tasks:
+
     - name: Ensure python3 git yaml installed
       raw: apk add --no-cache python3 git py3-yaml
       changed_when: false
       failed_when: false
 
     - name: Set git username
-      command: git config --global user.name "{{ git_user_name }}"
+      command: git config user.name "{{ git_user_name }}"
+      args:
+        chdir: "{{ repo_path }}"
 
     - name: Set git email
-      command: git config --global user.email "{{ git_user_email }}"
+      command: git config user.email "{{ git_user_email }}"
+      args:
+        chdir: "{{ repo_path }}"
 
     - name: Pull latest code
-      command: git pull origin {{ git_branch }}
+      command: git pull --rebase origin {{ git_branch }}
       args:
         chdir: "{{ repo_path }}"
 
     - name: Run JSON to YAML conversion
       command: >
-        python3 {{ repo_path }}/convert.py
+        python3 convert.py
         json2yaml
-        {{ repo_path }}/munendra.json
-        {{ repo_path }}/output.yaml
+        munendra.json
+        output.yaml
+      args:
+        chdir: "{{ repo_path }}"
       register: convert_result
 
     - name: Show conversion result
       debug:
         var: convert_result.stdout
 
-    - name: Add output.yaml
-      command: git add output.yaml
+    - name: Add files
+      command: git add .
       args:
         chdir: "{{ repo_path }}"
 
