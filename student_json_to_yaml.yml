@@ -5,7 +5,7 @@
   gather_facts: no
 
   vars:
-    repo_url: https://rajputgagan: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@github.com/rajputgagan/Student.git
+    repo_url: https://rajputgagan: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@github.com/rajputgagan/Student.git
     repo_path: /tmp/myrepo
     venv_path: /tmp/venv
     git_branch: main
