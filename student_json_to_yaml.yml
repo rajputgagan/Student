@@ -9,57 +9,56 @@
 
   tasks:
 
-    - name: Debug repo path
+    - name: Show current path
+      command: pwd
+      register: pwd_out
+
+    - debug:
+        var: pwd_out.stdout
+
+    - name: List files
       command: ls -la
-      args:
-        chdir: /runner/project
+      register: ls_out
+
+    - debug:
+        var: ls_out.stdout
 
     - name: Set git username
-      command: git config user.name "rajputgagan"
+      shell: git config user.name "rajputgagan"
       args:
-        chdir: /runner/project
+        chdir: "{{ playbook_dir }}"
 
     - name: Set git email
-      command: git config user.email "gr9582730@gmail.com"
+      shell: git config user.email "gr9582730@gmail.com"
       args:
-        chdir: /runner/project
+        chdir: "{{ playbook_dir }}"
 
-    - name: Pull latest code
-      command: git pull --rebase origin main
+    - name: Pull latest
+      shell: git pull --rebase origin main
       args:
-        chdir: /runner/project
+        chdir: "{{ playbook_dir }}"
 
-    - name: Convert JSON to YAML
-      command: python3 convert.py json2yaml munendra.json output.yaml
+    - name: Convert JSON → YAML
+      shell: python3 convert.py json2yaml munendra.json output.yaml
       args:
-        chdir: /runner/project
+        chdir: "{{ playbook_dir }}"
 
-    - name: Convert YAML to JSON
-      command: python3 convert.py yaml2json priyanka.yaml output.json
+    - name: Convert YAML → JSON
+      shell: python3 convert.py yaml2json priyanka.yaml output.json
       args:
-        chdir: /runner/project
+        chdir: "{{ playbook_dir }}"
 
     - name: Git add
-      command: git add .
+      shell: git add .
       args:
-        chdir: /runner/project
+        chdir: "{{ playbook_dir }}"
 
-    - name: Check changes
-      shell: git diff --cached --quiet
+    - name: Commit if changes
+      shell: git diff --cached --quiet || git commit -m "Auto convert via AWX"
       args:
-        chdir: /runner/project
-      register: git_diff
-      failed_when: false
-      changed_when: false
-
-    - name: Commit
-      command: git commit -m "Auto convert via AWX"
-      args:
-        chdir: /runner/project
-      when: git_diff.rc != 0
+        chdir: "{{ playbook_dir }}"
 
     - name: Push
-      command: git push origin main
+      shell: git push origin main
       args:
-        chdir: /runner/project
-      when: git_diff.rc != 0
+        chdir: "{{ playbook_dir }}"
