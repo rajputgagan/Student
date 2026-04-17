@@ -1,23 +1,20 @@
 ---
-- name: JSON ↔ YAML Convert and Push
+- name: Convert files from GitHub and push back
   hosts: localhost
   connection: local
   gather_facts: no
 
   vars:
-    github_username: "rajputgagan"
-    github_token: "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"
-    github_email: "gr9582730@gmail.com"
-
-    repo_https_url: "https://github.com/rajputgagan/Student.git"
-    repo_auth_url: "https://{{ github_username }}:{{ github_token }}@github.com/rajputgagan/Student.git"
+    repo_url: "git@github.com:rajputgagan/Student.git"
     repo_path: "/tmp/myrepo"
     venv_path: "/tmp/venv"
     git_branch: "main"
+    github_username: "rajputgagan"
+    github_email: "gr9582730@gmail.com"
 
   tasks:
-    - name: Install system packages for Alpine
-      raw: apk add --no-cache python3 git py3-virtualenv
+    - name: Install required packages
+      raw: apk add --no-cache python3 git py3-virtualenv openssh
       changed_when: false
       failed_when: false
 
@@ -26,41 +23,38 @@
         path: "{{ repo_path }}"
         state: absent
 
-    - name: Remove old virtualenv
+    - name: Remove old venv
       file:
         path: "{{ venv_path }}"
         state: absent
 
-    - name: Clone repo
+    - name: Clone repo from GitHub using SSH
       git:
-        repo: "{{ repo_https_url }}"
+        repo: "{{ repo_url }}"
         dest: "{{ repo_path }}"
         version: "{{ git_branch }}"
         force: yes
+        accept_hostkey: yes
 
-    - name: Configure git username
+    - name: Set git username
       command: git config user.name "{{ github_username }}"
       args:
         chdir: "{{ repo_path }}"
 
-    - name: Configure git email
+    - name: Set git email
       command: git config user.email "{{ github_email }}"
       args:
         chdir: "{{ repo_path }}"
 
-    - name: Test GitHub auth
-      command: git ls-remote "{{ repo_auth_url }}"
-      register: git_auth_test
-      changed_when: false
+    - name: Pull latest changes from GitHub
+      command: git pull --rebase origin {{ git_branch }}
+      args:
+        chdir: "{{ repo_path }}"
 
-    - name: Show auth test output
-      debug:
-        var: git_auth_test.stdout_lines
-
-    - name: Create virtual environment
+    - name: Create Python virtual environment
       command: python3 -m venv {{ venv_path }}
 
-    - name: Install PyYAML in virtual environment
+    - name: Install PyYAML
       command: "{{ venv_path }}/bin/pip install pyyaml"
 
     - name: Convert JSON to YAML
@@ -81,12 +75,12 @@
       args:
         chdir: "{{ repo_path }}"
 
-    - name: Git add all files
+    - name: Add files to git
       command: git add .
       args:
         chdir: "{{ repo_path }}"
 
-    - name: Check for staged changes
+    - name: Check if there are staged changes
       shell: git diff --cached --quiet
       args:
         chdir: "{{ repo_path }}"
@@ -95,13 +89,13 @@
       changed_when: false
 
     - name: Commit changes
-      command: git commit -m "Auto convert JSON ↔ YAML via AWX"
+      command: git commit -m "Auto convert JSON and YAML via AWX"
       args:
         chdir: "{{ repo_path }}"
       when: git_diff.rc != 0
 
-    - name: Push changes using authenticated URL
-      command: git push "{{ repo_auth_url }}" "{{ git_branch }}"
+    - name: Push changes to GitHub
+      command: git push origin {{ git_branch }}
       args:
         chdir: "{{ repo_path }}"
       when: git_diff.rc != 0
@@ -111,6 +105,6 @@
         msg: "No changes detected, nothing to commit or push."
       when: git_diff.rc == 0
 
-    - name: Final success message
+    - name: Success
       debug:
-        msg: "✅ JSON ↔ YAML conversion and Git push completed successfully."
+        msg: "Conversion completed and changes pushed to GitHub."
