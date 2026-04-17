@@ -9,7 +9,8 @@
     github_token: "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"
     github_email: "gr9582730@gmail.com"
 
-    repo_url: "https://{{ github_username }}:{{ github_token }}@github.com/rajputgagan/Student.git"
+    repo_https_url: "https://github.com/rajputgagan/Student.git"
+    repo_auth_url: "https://{{ github_username }}:{{ github_token }}@github.com/rajputgagan/Student.git"
     repo_path: "/tmp/myrepo"
     venv_path: "/tmp/venv"
     git_branch: "main"
@@ -17,7 +18,6 @@
   tasks:
     - name: Install system packages for Alpine
       raw: apk add --no-cache python3 git py3-virtualenv
-      register: apk_result
       changed_when: false
       failed_when: false
 
@@ -33,41 +33,37 @@
 
     - name: Clone repo
       git:
-        repo: "{{ repo_url }}"
+        repo: "{{ repo_https_url }}"
         dest: "{{ repo_path }}"
         version: "{{ git_branch }}"
         force: yes
 
-    - name: Set authenticated remote URL
-      command: git remote set-url origin {{ repo_url }}
+    - name: Configure git username
+      command: git config user.name "{{ github_username }}"
       args:
         chdir: "{{ repo_path }}"
 
-    - name: Verify remote URL
-      command: git remote -v
+    - name: Configure git email
+      command: git config user.email "{{ github_email }}"
       args:
         chdir: "{{ repo_path }}"
-      register: remote_output
 
-    - name: Show remote URL
+    - name: Show current origin
+      command: git remote get-url origin
+      args:
+        chdir: "{{ repo_path }}"
+      register: origin_before
+      changed_when: false
+
+    - name: Print current origin
       debug:
-        var: remote_output.stdout_lines
+        var: origin_before.stdout
 
     - name: Create virtual environment
       command: python3 -m venv {{ venv_path }}
 
     - name: Install PyYAML in virtual environment
       command: "{{ venv_path }}/bin/pip install pyyaml"
-
-    - name: Set git username
-      command: git config user.name "{{ github_username }}"
-      args:
-        chdir: "{{ repo_path }}"
-
-    - name: Set git email
-      command: git config user.email "{{ github_email }}"
-      args:
-        chdir: "{{ repo_path }}"
 
     - name: Convert JSON to YAML
       command: >
@@ -106,8 +102,8 @@
         chdir: "{{ repo_path }}"
       when: git_diff.rc != 0
 
-    - name: Push changes
-      command: git push origin {{ git_branch }}
+    - name: Push changes using authenticated URL
+      command: git push "{{ repo_auth_url }}" "{{ git_branch }}"
       args:
         chdir: "{{ repo_path }}"
       when: git_diff.rc != 0
