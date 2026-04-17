@@ -6,7 +6,7 @@
 
   vars:
     github_username: "rajputgagan"
-    github_token: "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"
+    github_token: "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"
     github_email: "gr9582730@gmail.com"
 
     repo_https_url: "https://github.com/rajputgagan/Student.git"
@@ -48,16 +48,14 @@
       args:
         chdir: "{{ repo_path }}"
 
-    - name: Show current origin
-      command: git remote get-url origin
-      args:
-        chdir: "{{ repo_path }}"
-      register: origin_before
+    - name: Test GitHub auth
+      command: git ls-remote "{{ repo_auth_url }}"
+      register: git_auth_test
       changed_when: false
 
-    - name: Print current origin
+    - name: Show auth test output
       debug:
-        var: origin_before.stdout
+        var: git_auth_test.stdout_lines
 
     - name: Create virtual environment
       command: python3 -m venv {{ venv_path }}
