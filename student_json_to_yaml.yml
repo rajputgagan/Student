@@ -5,21 +5,30 @@
   gather_facts: no
 
   vars:
-    repo_url: https://rajputgagan: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@github.com/rajputgagan/Student.git
-    repo_path: /tmp/myrepo
-    venv_path: /tmp/venv
-    git_branch: main
+    github_username: "rajputgagan"
+    github_token: "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"
+    github_email: "gr9582730@gmail.com"
+
+    repo_url: "https://{{ github_username }}:{{ github_token }}@github.com/rajputgagan/Student.git"
+    repo_path: "/tmp/myrepo"
+    venv_path: "/tmp/venv"
+    git_branch: "main"
 
   tasks:
-
-    - name: Install system packages
+    - name: Install system packages for Alpine
       raw: apk add --no-cache python3 git py3-virtualenv
+      register: apk_result
       changed_when: false
       failed_when: false
 
     - name: Remove old repo
       file:
         path: "{{ repo_path }}"
+        state: absent
+
+    - name: Remove old virtualenv
+      file:
+        path: "{{ venv_path }}"
         state: absent
 
     - name: Clone repo
@@ -29,28 +38,38 @@
         version: "{{ git_branch }}"
         force: yes
 
+    - name: Set authenticated remote URL
+      command: git remote set-url origin {{ repo_url }}
+      args:
+        chdir: "{{ repo_path }}"
+
+    - name: Verify remote URL
+      command: git remote -v
+      args:
+        chdir: "{{ repo_path }}"
+      register: remote_output
+
+    - name: Show remote URL
+      debug:
+        var: remote_output.stdout_lines
+
     - name: Create virtual environment
       command: python3 -m venv {{ venv_path }}
 
-    - name: Install PyYAML inside venv
+    - name: Install PyYAML in virtual environment
       command: "{{ venv_path }}/bin/pip install pyyaml"
 
     - name: Set git username
-      command: git config user.name "rajputgagan"
+      command: git config user.name "{{ github_username }}"
       args:
         chdir: "{{ repo_path }}"
 
     - name: Set git email
-      command: git config user.email "gr9582730@gmail.com"
+      command: git config user.email "{{ github_email }}"
       args:
         chdir: "{{ repo_path }}"
 
-    - name: Pull latest
-      command: git pull --rebase origin {{ git_branch }}
-      args:
-        chdir: "{{ repo_path }}"
-
-    - name: Convert JSON → YAML
+    - name: Convert JSON to YAML
       command: >
         {{ venv_path }}/bin/python convert.py
         json2yaml
@@ -59,7 +78,7 @@
       args:
         chdir: "{{ repo_path }}"
 
-    - name: Convert YAML → JSON
+    - name: Convert YAML to JSON
       command: >
         {{ venv_path }}/bin/python convert.py
         yaml2json
@@ -68,12 +87,12 @@
       args:
         chdir: "{{ repo_path }}"
 
-    - name: Git add
+    - name: Git add all files
       command: git add .
       args:
         chdir: "{{ repo_path }}"
 
-    - name: Check changes
+    - name: Check for staged changes
       shell: git diff --cached --quiet
       args:
         chdir: "{{ repo_path }}"
@@ -81,18 +100,23 @@
       failed_when: false
       changed_when: false
 
-    - name: Commit
+    - name: Commit changes
       command: git commit -m "Auto convert JSON ↔ YAML via AWX"
       args:
         chdir: "{{ repo_path }}"
       when: git_diff.rc != 0
 
-    - name: Push
+    - name: Push changes
       command: git push origin {{ git_branch }}
       args:
         chdir: "{{ repo_path }}"
       when: git_diff.rc != 0
 
-    - name: Done
+    - name: No changes found
       debug:
-        msg: "✅ Everything successful!"
+        msg: "No changes detected, nothing to commit or push."
+      when: git_diff.rc == 0
+
+    - name: Final success message
+      debug:
+        msg: "✅ JSON ↔ YAML conversion and Git push completed successfully."
